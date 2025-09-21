@@ -23,9 +23,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-c_36v(7f#6wlgyz%hiy)67*7)u37&7yztq9qhi6ko$9iuts604'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+import os
 
-ALLOWED_HOSTS = []
+DEBUG = os.environ.get('RENDER', '') != 'True'
+
+
+ALLOWED_HOSTS = ['yslam-backend.onrender.com']
 
 
 # Application definition
@@ -136,6 +139,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 import os
