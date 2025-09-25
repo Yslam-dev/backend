@@ -23,7 +23,7 @@ class TestListView(generics.ListAPIView):
         user = self.request.user
         if user.role == 'teacher':
             # Используем select_related для оптимизации запроса
-            return Test.objects.filter(teacher=user).prefetch_related('questions').order_by('-create_at')
+            return Test.objects.filter(teacher=user).prefetch_related('questions')
         
 class TestDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Test.objects.all()
