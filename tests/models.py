@@ -5,19 +5,24 @@ User = get_user_model()
 
 class Test(models.Model):
     theme = models.CharField(max_length=255)
-    question = models.CharField(max_length=255)
-    correct_answer = models.CharField(max_length=255)
-    answer1 = models.CharField(max_length=255)
-    answer2 = models.CharField(max_length=255)
-    answer3 = models.CharField(max_length=255)
     number_question = models.IntegerField()
     create_at = models.DateTimeField(auto_now_add=True)
-    
-
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tests')
-    def __str__(self):
-        return f"{self.theme} - {self.question}"
 
+    def __str__(self):
+        return f"{self.theme} by {self.teacher.username}"
+
+class Question(models.Model):
+    test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.CharField(max_length=255)
+    correct_answer = models.CharField(max_length=255)
+    
+    # Мы будем хранить все 4 ответа в одном поле типа JSON. 
+    # Это удобно, так как не нужно создавать отдельные поля для каждого ответа.
+    answers = models.JSONField() 
+
+    def __str__(self):
+        return self.question_text
 class TestGive(models.Model):
     duration_minutes = models.PositiveIntegerField()
     number_given = models.IntegerField()
