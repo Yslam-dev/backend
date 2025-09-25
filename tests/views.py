@@ -68,7 +68,7 @@ class TestHistoryListView(generics.ListAPIView):
     def get_queryset(self):
         User = self.request.user
         if User.role == 'teacher':
-            return TestHistory.objects.filter(test_information__teacher=User).order_by("-create_at")
+            return TestHistory.objects.filter(test_information__teacher=User)
         elif User.role == 'student':
             return TestHistory.objects.filter(student=User)
         
