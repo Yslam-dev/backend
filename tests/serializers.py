@@ -30,7 +30,7 @@ class TestGiveSerializer(serializers.ModelSerializer):
 class TestHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = TestHistory
-        fields = '__all__'
+        fields = ['id', 'number_corrected', 'ball', 'user', 'give_information', 'test_information']
         read_only_fields = ['user']
         depth = 1
     
