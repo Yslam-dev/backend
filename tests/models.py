@@ -30,6 +30,11 @@ class TestGive(models.Model):
 
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='given_teacher')
     test = models.ForeignKey(Test, on_delete=models.CASCADE)
+    given_questions = models.ManyToManyField(
+        'Question', 
+        related_name='given_to_tests',
+        blank=True
+    )
 class TestHistory(models.Model):
     number_corrected = models.IntegerField()
     ball = models.IntegerField()

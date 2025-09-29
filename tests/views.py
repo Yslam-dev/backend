@@ -4,7 +4,7 @@ from rest_framework.exceptions import PermissionDenied
 from .models import Test, Question, TestGive, TestHistory
 # Используем новые сериализаторы
 from .serializers import TestCreateSerializer, QuestionSerializer, TestGiveSerializer, TestHistorySerializer
-
+import random
 
 class TestCreateView(generics.CreateAPIView):
     serializer_class = TestCreateSerializer
@@ -47,7 +47,24 @@ class TestGivenCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         if self.request.user.role != 'teacher':
             raise PermissionDenied("Dine mugallymlar ugradyp bilyar")
-        serializer.save(teacher=self.request.user)
+
+        test_instance = serializer.validated_data['test']
+        number_given = serializer.validated_data['number_given']
+        
+        # 1. Получаем все вопросы теста
+        all_questions = list(test_instance.questions.all())
+
+        # 2. Выбираем ограниченное случайное подмножество
+        if number_given >= len(all_questions):
+            selected_questions = all_questions
+        else:
+            selected_questions = random.sample(all_questions, number_given) # 👈 Вот где происходит ограничение!
+
+        # 3. Сохраняем объект TestGive
+        test_give_instance = serializer.save(teacher=self.request.user)
+        
+        # 4. 🟢 ФИКСИРУЕМ выбранные вопросы в новом поле
+        test_give_instance.given_questions.set(selected_questions)
 
 
 class TestGivenListView(generics.ListAPIView):
