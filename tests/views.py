@@ -80,7 +80,14 @@ class TestGivenListView(generics.ListAPIView):
             return TestGive.objects.filter(given_group=User.group_number)\
                 .select_related('test', 'teacher')\
                 .prefetch_related('test__questions') 
-
+class TestGivenDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Позволяет получить, обновить или удалить TestGive по ID.
+    Используется фронтендом для удаления TestGive после завершения теста.
+    """
+    queryset = TestGive.objects.all()
+    serializer_class = TestGiveSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 class TestHistoryCreateView(generics.CreateAPIView):
     serializer_class = TestHistorySerializer
