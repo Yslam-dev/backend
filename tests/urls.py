@@ -12,6 +12,7 @@ urlpatterns = [
 
     path('tests/give/create/', TestGivenCreateView.as_view(), name='test-give-create'),
     path('tests/give/list/', TestGivenListView.as_view(), name='test-give-list'),
+    path('tests/give/<int:pk>/', TestGivenDeleteUpdateView.as_view(), name='test-give-update-delete'), 
 
     path('tests/history/create/', TestHistoryCreateView.as_view(), name='test-history-create'),
     path('tests/history/list/', TestHistoryListView.as_view(), name='test-history-list'),
