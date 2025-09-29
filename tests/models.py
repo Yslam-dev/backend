@@ -35,5 +35,5 @@ class TestHistory(models.Model):
     ball = models.IntegerField()
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student')
-    give_information = models.ForeignKey(TestGive, on_delete=models.CASCADE, related_name='give_information')
+    give_information = models.ForeignKey(TestGive, on_delete=models.SET_NULL, null=True, blank=True,  related_name='give_information')
     test_information = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='test_information')
