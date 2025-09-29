@@ -1,7 +1,10 @@
+# =======================================================
+# Файл: urls.py (Исправлено)
+# =======================================================
 from django.urls import path
 from .views import (
     TestCreateView, TestListView, TestDeleteUpdateView,
-    TestGivenCreateView, TestGivenListView,
+    TestGivenCreateView, TestGivenListView, TestGivenDeleteUpdateView, # 🟢 ДОБАВЛЕНО
     TestHistoryCreateView, TestHistoryListView, TestHistoryDeleteUpdateView
 )
 
@@ -12,6 +15,8 @@ urlpatterns = [
 
     path('tests/give/create/', TestGivenCreateView.as_view(), name='test-give-create'),
     path('tests/give/list/', TestGivenListView.as_view(), name='test-give-list'),
+    
+    # 🟢 ДОБАВЛЕН НЕДОСТАЮЩИЙ МАРШРУТ для DELETE
     path('tests/give/<int:pk>/', TestGivenDeleteUpdateView.as_view(), name='test-give-update-delete'), 
 
     path('tests/history/create/', TestHistoryCreateView.as_view(), name='test-history-create'),
