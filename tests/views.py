@@ -1,10 +1,17 @@
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
-# Используем новые модели
 from .models import Test, Question, TestGive, TestHistory
-# Используем новые сериализаторы
 from .serializers import TestCreateSerializer, QuestionSerializer, TestGiveSerializer, TestHistorySerializer
 import random
+import logging
+
+# Инициализация логгера для отладки
+logger = logging.getLogger(__name__)
+
+
+# =================================================================
+# VIEWS FOR TEST (Mugallym) - (Без изменений)
+# =================================================================
 
 class TestCreateView(generics.CreateAPIView):
     serializer_class = TestCreateSerializer
@@ -17,14 +24,12 @@ class TestCreateView(generics.CreateAPIView):
 
 
 class TestListView(generics.ListAPIView):
-    # Теперь TestListView будет отдавать тесты вместе с вложенными вопросами
     serializer_class = TestCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.role == 'teacher':
-            # Используем select_related для оптимизации запроса
             return Test.objects.filter(teacher=user).prefetch_related('questions').order_by('-create_at')
 
 
@@ -40,6 +45,10 @@ class TestDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
         return obj
 
 
+# =================================================================
+# VIEWS FOR TESTGIVE (Mugallym/Okuwcy)
+# =================================================================
+
 class TestGivenCreateView(generics.CreateAPIView):
     serializer_class = TestGiveSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -51,19 +60,14 @@ class TestGivenCreateView(generics.CreateAPIView):
         test_instance = serializer.validated_data['test']
         number_given = serializer.validated_data['number_given']
         
-        # 1. Получаем все вопросы теста
         all_questions = list(test_instance.questions.all())
 
-        # 2. Выбираем ограниченное случайное подмножество
         if number_given >= len(all_questions):
             selected_questions = all_questions
         else:
-            selected_questions = random.sample(all_questions, number_given) # 👈 Вот где происходит ограничение!
+            selected_questions = random.sample(all_questions, number_given)
 
-        # 3. Сохраняем объект TestGive
         test_give_instance = serializer.save(teacher=self.request.user)
-        
-        # 4. 🟢 ФИКСИРУЕМ выбранные вопросы в новом поле
         test_give_instance.given_questions.set(selected_questions)
 
 
@@ -74,20 +78,22 @@ class TestGivenListView(generics.ListAPIView):
     def get_queryset(self):
         User = self.request.user
         if User.role == 'student':
-            # 🟢 ИСПРАВЛЕНИЕ: Добавляем prefetch_related('test__questions')
-            # Это гарантирует, что все вложенные вопросы для TestCreateSerializer
-            # (используемого в test_information) будут загружены одним запросом.
+            # Оптимизация для получения связанных данных
             return TestGive.objects.filter(given_group=User.group_number)\
                 .select_related('test', 'teacher')\
-                .prefetch_related('test__questions') 
+                .prefetch_related('given_questions')\
+                .order_by("-id")
+
+
 class TestGivenDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    """
-    Позволяет получить, обновить или удалить TestGive по ID.
-    Используется фронтендом для удаления TestGive после завершения теста.
-    """
     queryset = TestGive.objects.all()
     serializer_class = TestGiveSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+# =================================================================
+# VIEWS FOR TESTHISTORY (Taryh)
+# =================================================================
 
 class TestHistoryCreateView(generics.CreateAPIView):
     serializer_class = TestHistorySerializer
@@ -115,17 +121,24 @@ class TestHistoryListView(generics.ListAPIView):
             # Получаем ID пользователя из параметра запроса 'user'
             user_id_from_query = self.request.query_params.get('user')
             
-            # 🛑 Исправление 500 Internal Server Error: Защита от ?user=undefined
             if not user_id_from_query or user_id_from_query.lower() == 'undefined':
-                return TestHistory.objects.none()
+                 return TestHistory.objects.none()
 
-            # 🛡️ Проверка безопасности: Убеждаемся, что студент запрашивает ТОЛЬКО свои данные
+            # Проверка безопасности: Убеждаемся, что студент запрашивает ТОЛЬКО свои данные
             if str(logged_in_user.id) != user_id_from_query:
+                # logger.warning(f"SECURITY ALERT: User {logged_in_user.id} tried to access history of {user_id_from_query}")
                 raise PermissionDenied("Siz dine oz netijelerinizi gorup bilersiniz.")
             
-            # 🟢 Исправление FieldError: Используем корректное поле 'user'
-            return TestHistory.objects.filter(user=user_id_from_query).order_by("-id")
-        
+            # 🟢 КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Фильтруем по ID и добавляем оптимизацию
+            try:
+                # Фильтруем по user_id и оптимизируем запросы
+                return TestHistory.objects.filter(user_id=int(user_id_from_query))\
+                    .select_related('user', 'test_information__teacher')\
+                    .order_by("-id")
+            except ValueError:
+                # logger.error(f"Invalid user ID format: {user_id_from_query}")
+                return TestHistory.objects.none()
+
         # Для любой другой роли
         return TestHistory.objects.none()
 
