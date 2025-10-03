@@ -48,7 +48,6 @@ class TestDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("Bu testin duzujisi sen dal!")
         return obj
 
----
 ## VIEWS FOR TESTGIVE (Test bermek/wagty)
 
 class TestGivenCreateView(generics.CreateAPIView):
