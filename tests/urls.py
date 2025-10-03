@@ -5,7 +5,7 @@ from django.urls import path
 from .views import (
     TestCreateView, TestListView, TestDeleteUpdateView,
     TestGivenCreateView, TestGivenListView, TestGivenDeleteUpdateView, # 🟢 ДОБАВЛЕНО
-    TestHistoryCreateView, TestHistoryListView, TestHistoryDeleteUpdateView
+    TestHistoryCreateView, TestHistoryListView, TestHistoryDeleteUpdateView, TestUserView, TestToparView
 )
 
 urlpatterns = [
@@ -17,9 +17,11 @@ urlpatterns = [
     path('tests/give/list/', TestGivenListView.as_view(), name='test-give-list'),
     
     # 🟢 ДОБАВЛЕН НЕДОСТАЮЩИЙ МАРШРУТ для DELETE
-    path('tests/give/<int:pk>/', TestGivenDeleteUpdateView.as_view(), name='test-give-update-delete'), 
+    path('tests/give/<int:pk>/', TestGivenDeleteUpdateView.as_view(), name='test-give-update-delete'),
 
     path('tests/history/create/', TestHistoryCreateView.as_view(), name='test-history-create'),
     path('tests/history/list/', TestHistoryListView.as_view(), name='test-history-list'),
-    path('tests/history/<int:pk>/', TestHistoryDeleteUpdateView.as_view(), name='test-history-update-delete'),
+    path('tests/history/given_group/<int:pk>/', TestToparView.as_view(), name='test-topar'),
+    path('tests/history/user/<int:pk>/', TestUserView.as_view(), name='test-ulanyjy'),
+    path('tests/history/group/<int:pk>/', TestHistoryDeleteUpdateView.as_view(), name='test-history-update-delete'),
 ]
