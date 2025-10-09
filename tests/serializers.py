@@ -81,10 +81,22 @@ class TestGiveSerializer(serializers.ModelSerializer):
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
 # =================================================================
 
+class TestShortSerializer(serializers.ModelSerializer):
+    teacher = serializers.SlugRelatedField(slug_field='username', read_only=True)
+    create_at_formatted = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Test
+        fields = ['id', 'theme', 'number_question', 'create_at', 'create_at_formatted', 'teacher']
+
+    def get_create_at_formatted(self, obj):
+        if obj.create_at:
+            return obj.create_at.strftime('%d.%m.%Y')
+        return None
+
+
 class TestHistorySerializer(serializers.ModelSerializer):
-    test_information = serializers.PrimaryKeyRelatedField(
-        queryset=Test.objects.all()
-    )
+    test_information = TestShortSerializer(read_only=True)
     give_information = serializers.PrimaryKeyRelatedField(
         queryset=TestGive.objects.all(), allow_null=True, required=False
     )
