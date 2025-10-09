@@ -38,14 +38,44 @@ class TestCreateSerializer(serializers.ModelSerializer):
 # 2. ИСПРАВЛЕННЫЙ TestGiveSerializer (для given_questions) 🚀
 # =================================================================
 
-
 class TestGiveSerializer(serializers.ModelSerializer):
-    test_information = NestedTestSerializer(source='test', read_only=True)
-    teacher_name = serializers.CharField(source='teacher.username', read_only=True)
+    """
+    Сериализатор для TestGive.
+    - Принимает test ID для создания.
+    - Отдает ограниченный список вопросов через given_questions.
+    """
+    
+    # ❌ УДАЛЕНО: test_information (которое давало ВСЕ вопросы теста)
+    # test_information = TestCreateSerializer(source='test', read_only=True)
+    
+    # 🟢 НОВОЕ ПОЛЕ: Теперь отдаем только ограниченный набор вопросов
+    given_questions = QuestionSerializer(many=True, read_only=True)
+    
+    # Добавляем тему (theme) и ID оригинального теста (test_id) напрямую
+    # для удобства фронтенда, так как test_information удалено
+    test_theme = serializers.CharField(source='test.theme', read_only=True)
+    test_id = serializers.IntegerField(source='test.id', read_only=True)
+    
+    # Поле 'test' для приема ID теста при создании (запись)
+    test = serializers.PrimaryKeyRelatedField(
+        queryset=Test.objects.all(), 
+        write_only=True 
+    )
+    
+    # Учитель read-only
+    teacher = serializers.SlugRelatedField(
+        slug_field='username', 
+        read_only=True
+    )
 
     class Meta:
         model = TestGive
-        fields = ['id', 'duration_minutes', 'number_given', 'given_group', 'test_information', 'teacher_name']
+        # Удаляем 'test_information' и добавляем новые поля
+        fields = [
+            'id', 'duration_minutes', 'number_given', 'given_group', 
+            'teacher', 'test', 'test_theme', 'test_id', 'given_questions'
+        ]
+        # depth больше не нужен
         
 # =================================================================
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
