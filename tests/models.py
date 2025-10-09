@@ -40,5 +40,13 @@ class TestHistory(models.Model):
     ball = models.IntegerField()
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='student')
-    give_information = models.ForeignKey(TestGive, on_delete=models.SET_NULL, null=True, blank=True,  related_name='give_information')
+    give_information = models.ForeignKey(TestGive, on_delete=models.SET_NULL, null=True, blank=True, related_name='give_information')
     test_information = models.ForeignKey(Test, on_delete=models.CASCADE, related_name='test_information')
+
+    # 🟢 Bu alan olmadan reviewQuestions frontende asla gelmez:
+    review_questions = models.JSONField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.test_information.theme if self.test_information else 'No Test'}"
