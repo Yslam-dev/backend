@@ -90,7 +90,9 @@ class TestShortSerializer(serializers.ModelSerializer):
 
 
 class TestHistorySerializer(serializers.ModelSerializer):
-    test_information = TestShortSerializer(read_only=True)
+    test_information = serializers.PrimaryKeyRelatedField(
+        queryset=Test.objects.all()
+    )
     give_information = serializers.PrimaryKeyRelatedField(
         queryset=TestGive.objects.all(), allow_null=True, required=False
     )
