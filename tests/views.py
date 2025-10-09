@@ -67,19 +67,31 @@ class TestGivenCreateView(generics.CreateAPIView):
         test_give_instance.given_questions.set(selected_questions)
 
 
+from rest_framework import generics, permissions
+from .models import TestGive
+from .serializers import TestGiveSerializer
+
 class TestGivenListView(generics.ListAPIView):
     serializer_class = TestGiveSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        User = self.request.user
-        if User.role == 'student':
-            # 🟢 ИСПРАВЛЕНИЕ: Добавляем prefetch_related('test__questions')
-            # Это гарантирует, что все вложенные вопросы для TestCreateSerializer
-            # (используемого в test_information) будут загружены одним запросом.
-            return TestGive.objects.filter(given_group=User.group_number)\
-                .select_related('test', 'teacher')\
-                .prefetch_related('test__questions') 
+        user = self.request.user
+
+        if user.role == 'student':
+            # Проверяем, что группа у студента заполнена
+            if not hasattr(user, 'group_number') or user.group_number is None:
+                return TestGive.objects.none()
+
+            return TestGive.objects.filter(
+                given_group=user.group_number
+            ).select_related('test', 'teacher').prefetch_related('test__questions')
+
+        elif user.role == 'teacher':
+            return TestGive.objects.filter(teacher=user).select_related('test', 'teacher').prefetch_related('test__questions')
+
+        return TestGive.objects.none()
+
 
 class TestGivenDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """
