@@ -123,9 +123,7 @@ class TestHistoryListView(generics.ListAPIView):
         
         # 2. Сценарий для студента (вызывается из okuwcy.jsx)
         elif logged_in_user.role == 'student':
-            
-            # Получаем ID пользователя из параметра запроса 'user'
-            user_id_from_query = self.request.query_params.get('user')
+            return TestHistory.objects.filter(user=logged_in_user).order_by("-id")
             
             # 🛑 Исправление 500 Internal Server Error: Защита от ?user=undefined
             if not user_id_from_query or user_id_from_query.lower() == 'undefined':
