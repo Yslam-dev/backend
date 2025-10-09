@@ -82,19 +82,28 @@ class TestGiveSerializer(serializers.ModelSerializer):
 # =================================================================
 
 class TestHistorySerializer(serializers.ModelSerializer):
-    """
-    Возвращает TestHistory с информацией о TestGive и Test.
-    TestGive и TestInformation будут отображены вложенными.
-    """
-    
-    # Добавляем прямые поля для темы и учителя, чтобы избежать излишних depth.
-    test_theme = serializers.CharField(source='test_information.theme', read_only=True)
-    teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
-    
+    test_information = serializers.SerializerMethodField()
+
     class Meta:
         model = TestHistory
-        fields = '__all__'
-        read_only_fields = ['user']
-        # ⚠️ УДАЛЕНО depth=1. Лучше явно указывать поля, как выше, 
-        # чтобы избежать неконтролируемой рекурсии и загрузки всех вопросов. 
-        # depth = 1
+        fields = [
+            "id",
+            "number_corrected",
+            "ball",
+            "user",
+            "test_information",
+            "give_information",
+            "review_questions",
+            "created_at",
+        ]
+        read_only_fields = ["user"]
+
+    def get_test_information(self, obj):
+        if obj.test_information:
+            return {
+                "id": obj.test_information.id,
+                "theme": obj.test_information.theme,
+                "teacher": obj.test_information.teacher.username,
+                "number_question": obj.test_information.number_question,
+            }
+        return None
