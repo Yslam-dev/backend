@@ -96,6 +96,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
     give_information = serializers.PrimaryKeyRelatedField(
         queryset=TestGive.objects.all(), allow_null=True, required=False
     )
+    test_info_read = TestShortSerializer(source='test_information', read_only=True)
 
     class Meta:
         model = TestHistory
