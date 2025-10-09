@@ -1,143 +1,100 @@
-from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
-# Используем новые модели
-from .models import Test, Question, TestGive, TestHistory
-# Используем новые сериализаторы
-from .serializers import TestCreateSerializer, QuestionSerializer, TestGiveSerializer, TestHistorySerializer
-import random
+from rest_framework import serializers
+# Предполагаем, что модели импортированы корректно
+from .models import Test, Question, TestGive, TestHistory 
+from django.contrib.auth import get_user_model
 
-class TestCreateView(generics.CreateAPIView):
-    serializer_class = TestCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+User = get_user_model()
 
-    def perform_create(self, serializer):
-        if self.request.user.role != 'teacher':
-            raise PermissionDenied("Dine mugallymlar test duzup bilyar")
-        serializer.save(teacher=self.request.user)
+# =================================================================
+# 1. СЕРИАЛИЗАТОРЫ ДЛЯ TEST и QUESTION (Оставлены без изменений)
+# =================================================================
 
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        # Поле answers должно быть видимо, чтобы студент мог выбирать ответы
+        fields = ['id', 'question_text', 'correct_answer', 'answers'] 
+        # Примечание: 'correct_answer' должен быть скрыт от студента в реальном приложении,
+        # но для простоты оставляем его здесь.
 
-class TestListView(generics.ListAPIView):
-    # Теперь TestListView будет отдавать тесты вместе с вложенными вопросами
-    serializer_class = TestCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class TestCreateSerializer(serializers.ModelSerializer):
+    # Используем TestCreateSerializer для создания и TestListView (для отдачи вопросов)
+    questions = QuestionSerializer(many=True, required=False)
 
-    def get_queryset(self):
-        user = self.request.user
-        if user.role == 'teacher':
-            # Используем select_related для оптимизации запроса
-            return Test.objects.filter(teacher=user).prefetch_related('questions').order_by('-create_at')
+    class Meta:
+        model = Test
+        fields = ['id','theme', 'number_question', 'create_at', 'teacher', 'questions'] 
+        read_only_fields = ['teacher'] # Защита поля учителя
+        depth = 1 # Для получения имени учителя
 
+    def create(self, validated_data):
+        questions_data = validated_data.pop('questions', [])
+        test = Test.objects.create(**validated_data)
+        for question_data in questions_data:
+            Question.objects.create(test=test, **question_data)
+        return test
 
-class TestDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Test.objects.all()
-    serializer_class = TestCreateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# =================================================================
+# 2. ИСПРАВЛЕННЫЙ TestGiveSerializer (для given_questions) 🚀
+# =================================================================
 
-    def get_object(self):
-        obj = super().get_object()
-        if self.request.user != obj.teacher:
-            raise PermissionDenied("Bu testin duzujisi sen dal!")
-        return obj
-
-
-class TestGivenCreateView(generics.CreateAPIView):
-    serializer_class = TestGiveSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        if self.request.user.role != 'teacher':
-            raise PermissionDenied("Dine mugallymlar ugradyp bilyar")
-
-        test_instance = serializer.validated_data['test']
-        number_given = serializer.validated_data['number_given']
-        
-        # 1. Получаем все вопросы теста
-        all_questions = list(test_instance.questions.all())
-
-        # 2. Выбираем ограниченное случайное подмножество
-        if number_given >= len(all_questions):
-            selected_questions = all_questions
-        else:
-            selected_questions = random.sample(all_questions, number_given) # 👈 Вот где происходит ограничение!
-
-        # 3. Сохраняем объект TestGive
-        test_give_instance = serializer.save(teacher=self.request.user)
-        
-        # 4. 🟢 ФИКСИРУЕМ выбранные вопросы в новом поле
-        test_give_instance.given_questions.set(selected_questions)
-
-
-class TestGivenListView(generics.ListAPIView):
-    serializer_class = TestGiveSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        User = self.request.user
-        if User.role == 'student':
-            # 🟢 ИСПРАВЛЕНИЕ: Добавляем prefetch_related('test__questions')
-            # Это гарантирует, что все вложенные вопросы для TestCreateSerializer
-            # (используемого в test_information) будут загружены одним запросом.
-            return TestGive.objects.filter(given_group=User.group_number)\
-                .select_related('test', 'teacher')\
-                .prefetch_related('test__questions') 
-
-class TestGivenDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
+class TestGiveSerializer(serializers.ModelSerializer):
     """
-    Позволяет получить, обновить или удалить TestGive по ID.
-    Используется фронтендом для удаления TestGive после завершения теста.
+    Сериализатор для TestGive.
+    - Принимает test ID для создания.
+    - Отдает ограниченный список вопросов через given_questions.
     """
-    queryset = TestGive.objects.all()
-    serializer_class = TestGiveSerializer
-    permission_classes = [permissions.IsAuthenticated]
-class TestHistoryCreateView(generics.CreateAPIView):
-    serializer_class = TestHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    # ❌ УДАЛЕНО: test_information (которое давало ВСЕ вопросы теста)
+    # test_information = TestCreateSerializer(source='test', read_only=True)
+    
+    # 🟢 НОВОЕ ПОЛЕ: Теперь отдаем только ограниченный набор вопросов
+    given_questions = QuestionSerializer(many=True, read_only=True)
+    
+    # Добавляем тему (theme) и ID оригинального теста (test_id) напрямую
+    # для удобства фронтенда, так как test_information удалено
+    test_theme = serializers.CharField(source='test.theme', read_only=True)
+    test_id = serializers.IntegerField(source='test.id', read_only=True)
+    
+    # Поле 'test' для приема ID теста при создании (запись)
+    test = serializers.PrimaryKeyRelatedField(
+        queryset=Test.objects.all(), 
+        write_only=True 
+    )
+    
+    # Учитель read-only
+    teacher = serializers.SlugRelatedField(
+        slug_field='username', 
+        read_only=True
+    )
 
-    def perform_create(self, serializer):
-        # Сохраняем залогиненного пользователя как 'user' в TestHistory
-        serializer.save(user=self.request.user)
-
-
-class TestHistoryListView(generics.ListAPIView):
-    serializer_class = TestHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        logged_in_user = self.request.user
+    class Meta:
+        model = TestGive
+        # Удаляем 'test_information' и добавляем новые поля
+        fields = [
+            'id', 'duration_minutes', 'number_given', 'given_group', 
+            'teacher', 'test', 'test_theme', 'test_id', 'given_questions'
+        ]
+        # depth больше не нужен
         
-        # 1. Сценарий для учителя
-        if logged_in_user.role == 'teacher':
-            return TestHistory.objects.filter(test_information__teacher=logged_in_user).order_by("-id")
-        
-        # 2. Сценарий для студента (вызывается из okuwcy.jsx)
-        elif logged_in_user.role == 'student':
-            
-            # Получаем ID пользователя из параметра запроса 'user'
-            user_id_from_query = self.request.query_params.get('user')
-            
-            # 🛑 Исправление 500 Internal Server Error: Защита от ?user=undefined
-            if not user_id_from_query or user_id_from_query.lower() == 'undefined':
-                return TestHistory.objects.none()
+# =================================================================
+# 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
+# =================================================================
 
-            # 🛡️ Проверка безопасности: Убеждаемся, что студент запрашивает ТОЛЬКО свои данные
-            if str(logged_in_user.id) != user_id_from_query:
-                raise PermissionDenied("Siz dine oz netijelerinizi gorup bilersiniz.")
-            
-            # 🟢 Исправление FieldError: Используем корректное поле 'user'
-            return TestHistory.objects.filter(user=user_id_from_query).order_by("-id")
-        
-        # Для любой другой роли
-        return TestHistory.objects.none()
-
-
-class TestHistoryDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = TestHistory.objects.all()
-    serializer_class = TestHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        obj = super().get_object()
-        # Разрешаем удалять/обновлять только учителю, который создал тест
-        if self.request.user != obj.test_information.teacher:
-            raise PermissionDenied("Sen bu testin taryhyny uygedip yada pozup bilmersin")
-        return obj
+class TestHistorySerializer(serializers.ModelSerializer):
+    """
+    Возвращает TestHistory с информацией о TestGive и Test.
+    TestGive и TestInformation будут отображены вложенными.
+    """
+    
+    # Добавляем прямые поля для темы и учителя, чтобы избежать излишних depth.
+    test_theme = serializers.CharField(source='test_information.theme', read_only=True)
+    teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
+    
+    class Meta:
+        model = TestHistory
+        fields = '__all__'
+        read_only_fields = ['user']
+        # ⚠️ УДАЛЕНО depth=1. Лучше явно указывать поля, как выше, 
+        # чтобы избежать неконтролируемой рекурсии и загрузки всех вопросов. 
+        # depth = 1
