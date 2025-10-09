@@ -82,7 +82,12 @@ class TestGiveSerializer(serializers.ModelSerializer):
 # =================================================================
 
 class TestHistorySerializer(serializers.ModelSerializer):
-    test_information = serializers.SerializerMethodField()
+    test_information = serializers.PrimaryKeyRelatedField(
+        queryset=Test.objects.all()
+    )
+    give_information = serializers.PrimaryKeyRelatedField(
+        queryset=TestGive.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = TestHistory
@@ -105,5 +110,6 @@ class TestHistorySerializer(serializers.ModelSerializer):
                 "theme": obj.test_information.theme,
                 "teacher": obj.test_information.teacher.username,
                 "number_question": obj.test_information.number_question,
+                "create_at": obj.test_information.create_at,  # 🟢 Добавлено
             }
         return None
