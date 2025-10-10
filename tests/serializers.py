@@ -90,14 +90,7 @@ class TestShortSerializer(serializers.ModelSerializer):
 
 
 class TestHistorySerializer(serializers.ModelSerializer):
-    # Для записи: ID теста
-    test_information = serializers.PrimaryKeyRelatedField(
-        queryset=Test.objects.all()
-    )
-    
-    # Для чтения: подробная инфа о тесте
-    test_info_read = TestShortSerializer(source='test_information', read_only=True)
-
+    test_information = TestShortSerializer(read_only=True)
     give_information = serializers.PrimaryKeyRelatedField(
         queryset=TestGive.objects.all(), allow_null=True, required=False
     )
@@ -109,8 +102,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "number_corrected",
             "ball",
             "user",
-            "test_information",  # запись ID
-            "test_info_read",    # чтение полной инфы
+            "test_information",  # теперь объект, а не просто ID
             "give_information",
             "review_questions",
             "created_at",
