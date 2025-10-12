@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 # Используем новые модели
+from rest_framework.exceptions import ValidationError
 from .models import Test, Question, TestGive, TestHistory
 # Используем новые сериализаторы
 from .serializers import TestCreateSerializer, QuestionSerializer, TestGiveSerializer, TestHistorySerializer
@@ -115,10 +116,19 @@ class TestHistoryCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         give_info = serializer.validated_data.get('give_information')
-        if give_info:
+        test_info = None
+
+        # если есть give_information, возьмём test из него
+        if give_info and hasattr(give_info, 'test'):
             test_info = give_info.test
-        else:
-            test_info = None
+
+        # если нет, попробуем взять test_information напрямую
+        if not test_info:
+            test_info = serializer.validated_data.get('test_information')
+
+        if not test_info:
+            raise ValidationError("Test maglumatlary tapylmady.")
+
         serializer.save(user=self.request.user, test_information=test_info)
 
 class TestHistoryListView(generics.ListAPIView):
