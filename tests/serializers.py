@@ -76,7 +76,11 @@ class TestGiveSerializer(serializers.ModelSerializer):
             'teacher', 'test', 'test_theme', 'test_id', 'given_questions'
         ]
         # depth больше не нужен
-        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'name', 'surname', 'username']
+        # eger User modelinde 'name' we 'surname' ýok bolsa, uýgunlaşdyryp ýaz        
 # =================================================================
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
 # =================================================================
