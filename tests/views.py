@@ -109,6 +109,17 @@ class TestHistoryCreateView(generics.CreateAPIView):
         # Сохраняем залогиненного пользователя как 'user' в TestHistory
         serializer.save(user=self.request.user)
 
+class TestHistoryCreateView(generics.CreateAPIView):
+    serializer_class = TestHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        give_info = serializer.validated_data.get('give_information')
+        if give_info:
+            test_info = give_info.test
+        else:
+            test_info = None
+        serializer.save(user=self.request.user, test_information=test_info)
 
 class TestHistoryListView(generics.ListAPIView):
     serializer_class = TestHistorySerializer
