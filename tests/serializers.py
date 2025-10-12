@@ -98,7 +98,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
     test_theme = serializers.CharField(source='test_information.theme', read_only=True)
     teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
     test_date = serializers.DateTimeField(source='test_information.create_at', read_only=True)
-
+    user = UserSerializer(read_only=True)  
     class Meta:
         model = TestHistory
         fields = [
