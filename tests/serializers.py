@@ -89,17 +89,16 @@ class TestShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'theme', 'number_question', 'create_at', 'teacher']
 
 
-class TestHistoryCreateView(generics.CreateAPIView):
-    serializer_class = TestHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        give_info = serializer.validated_data.get('give_information')
-        if give_info:
-            test_info = give_info.test
-        else:
-            test_info = None
-        serializer.save(user=self.request.user, test_information=test_info)
+class TestHistorySerializer(serializers.ModelSerializer):
+    """
+    Возвращает TestHistory с информацией о TestGive и Test.
+    TestGive и TestInformation будут отображены вложенными.
+    """
+    
+    # Добавляем прямые поля для темы и учителя, чтобы избежать излишних depth.
+    test_theme = serializers.CharField(source='test_information.theme', read_only=True)
+    teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
+    
 
 
     class Meta:
