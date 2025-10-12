@@ -90,16 +90,10 @@ class TestShortSerializer(serializers.ModelSerializer):
 
 
 class TestHistorySerializer(serializers.ModelSerializer):
-    """
-    Возвращает TestHistory с информацией о TestGive и Test.
-    TestGive и TestInformation будут отображены вложенными.
-    """
-    
-    # Добавляем прямые поля для темы и учителя, чтобы избежать излишних depth.
+    # 🟢 Добавляем нужные поля для отображения темы и даты
     test_theme = serializers.CharField(source='test_information.theme', read_only=True)
     teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
-    
-
+    test_date = serializers.DateTimeField(source='test_information.create_at', read_only=True)
 
     class Meta:
         model = TestHistory
@@ -108,12 +102,16 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "number_corrected",
             "ball",
             "user",
-            "test_information",  # теперь объект, а не просто ID
+            "test_information",
             "give_information",
             "review_questions",
             "created_at",
+            "test_theme",          # 🟢 Добавлено
+            "teacher_username",    # 🟢 Добавлено
+            "test_date",           # 🟢 Добавлено
         ]
         read_only_fields = ["user"]
+
 
 
     def get_test_information(self, obj):
