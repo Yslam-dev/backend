@@ -89,11 +89,18 @@ class TestShortSerializer(serializers.ModelSerializer):
         fields = ['id', 'theme', 'number_question', 'create_at', 'teacher']
 
 
-class TestHistorySerializer(serializers.ModelSerializer):
-    test_information = TestShortSerializer(read_only=True)
-    give_information = serializers.PrimaryKeyRelatedField(
-        queryset=TestGive.objects.all(), allow_null=True, required=False
-    )
+class TestHistoryCreateView(generics.CreateAPIView):
+    serializer_class = TestHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        give_info = serializer.validated_data.get('give_information')
+        if give_info:
+            test_info = give_info.test
+        else:
+            test_info = None
+        serializer.save(user=self.request.user, test_information=test_info)
+
 
     class Meta:
         model = TestHistory
