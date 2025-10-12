@@ -79,7 +79,7 @@ class TestGiveSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'name', 'surname', 'username']
+        fields = ['id', 'surname', 'username']
         # eger User modelinde 'name' we 'surname' ýok bolsa, uýgunlaşdyryp ýaz        
 # =================================================================
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
