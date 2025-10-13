@@ -128,3 +128,4 @@ class TestHistorySerializer(serializers.ModelSerializer):
                 "create_at": obj.test_information.create_at,  # 🟢 Добавлено
             }
         return None
+depth=1
