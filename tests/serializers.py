@@ -98,6 +98,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
     test_theme = serializers.CharField(source='test_information.theme', read_only=True)
     teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
     test_date = serializers.DateTimeField(source='test_information.create_at', read_only=True)
+    given_group = serializers.CharField(source='give_information.given_group', read_only=True)
     user = UserSerializer(read_only=True)  
     class Meta:
         model = TestHistory
@@ -115,7 +116,6 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "test_date",           # 🟢 Добавлено
         ]
         read_only_fields = ["user"]
-        depth=1
 
 
     def get_test_information(self, obj):
@@ -125,7 +125,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
                 "theme": obj.test_information.theme,
                 "teacher": obj.test_information.teacher.username,
                 "number_question": obj.test_information.number_question,
-                "create_at": obj.test_information.create_at,  # 🟢 Добавлено
+                "create_at": obj.test_information.create_at, # 🟢 Добавлено
             }
         return None
 
