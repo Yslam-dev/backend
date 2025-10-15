@@ -115,7 +115,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "test_date",           # 🟢 Добавлено
         ]
         read_only_fields = ["user"]
-
+        depth=1
 
 
     def get_test_information(self, obj):
@@ -128,4 +128,4 @@ class TestHistorySerializer(serializers.ModelSerializer):
                 "create_at": obj.test_information.create_at,  # 🟢 Добавлено
             }
         return None
-depth=1
+
