@@ -87,7 +87,7 @@ class UserSerializer(serializers.ModelSerializer):
 class TestGiveSerializer(serializers.ModelSerializer):
     class Meta:
         model = TestGive
-        fields = ['id', 'given_number']
+        fields = ['id', 'given_group', 'number_given', 'duration_minutes']
         
 class TestShortSerializer(serializers.ModelSerializer):
     teacher = serializers.SlugRelatedField(slug_field='username', read_only=True)
