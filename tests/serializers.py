@@ -84,7 +84,7 @@ class UserSerializer(serializers.ModelSerializer):
 # =================================================================
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
 # =================================================================
-class TestGiveSerializer(serializers.ModelSerializer):
+class TestGiveHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = TestGive
         fields = ['id', 'given_group', 'number_given', 'duration_minutes']
@@ -102,7 +102,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
     test_theme = serializers.CharField(source='test_information.theme', read_only=True)
     teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
     test_date = serializers.DateTimeField(source='test_information.create_at', read_only=True)
-    given_group = TestGiveSerializer(read_only=True)
+    given_group = TestGiveHistorySerializer(read_only=True)
     user = UserSerializer(read_only=True)  
     class Meta:
         model = TestHistory
