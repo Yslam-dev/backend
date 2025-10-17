@@ -120,6 +120,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "test_date",
         ]
         read_only_fields = ["user"]
+        read_only_fields = ["give_information"]
 
 
     def get_test_information(self, obj):
