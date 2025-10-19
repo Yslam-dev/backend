@@ -123,6 +123,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 AUTH_USER_MODEL = 'giris.User'
 
+AUTHENTICATION_BACKENDS = [
+    'giris.backends.RoleBasedBackend',  # наш кастомный backend
+    'django.contrib.auth.backends.ModelBackend',  # запасной
+]
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/

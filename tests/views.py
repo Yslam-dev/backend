@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.exceptions import PermissionDenied
 # Используем новые модели
+from rest_framework.exceptions import ValidationError
 from .models import Test, Question, TestGive, TestHistory
 # Используем новые сериализаторы
 from .serializers import TestCreateSerializer, QuestionSerializer, TestGiveSerializer, TestHistorySerializer
@@ -67,19 +68,31 @@ class TestGivenCreateView(generics.CreateAPIView):
         test_give_instance.given_questions.set(selected_questions)
 
 
+from rest_framework import generics, permissions
+from .models import TestGive
+from .serializers import TestGiveSerializer
+
 class TestGivenListView(generics.ListAPIView):
     serializer_class = TestGiveSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        User = self.request.user
-        if User.role == 'student':
-            # 🟢 ИСПРАВЛЕНИЕ: Добавляем prefetch_related('test__questions')
-            # Это гарантирует, что все вложенные вопросы для TestCreateSerializer
-            # (используемого в test_information) будут загружены одним запросом.
-            return TestGive.objects.filter(given_group=User.group_number)\
-                .select_related('test', 'teacher')\
-                .prefetch_related('test__questions') 
+        user = self.request.user
+
+        if user.role == 'student':
+            # Проверяем, что группа у студента заполнена
+            if not hasattr(user, 'group_number') or user.group_number is None:
+                return TestGive.objects.none()
+
+            return TestGive.objects.filter(
+                given_group=user.group_number
+            ).select_related('test', 'teacher').prefetch_related('test__questions')
+
+        elif user.role == 'teacher':
+            return TestGive.objects.filter(teacher=user).select_related('test', 'teacher').prefetch_related('test__questions')
+
+        return TestGive.objects.none()
+
 
 class TestGivenDeleteUpdateView(generics.RetrieveUpdateDestroyAPIView):
     """
@@ -97,6 +110,32 @@ class TestHistoryCreateView(generics.CreateAPIView):
         # Сохраняем залогиненного пользователя как 'user' в TestHistory
         serializer.save(user=self.request.user)
 
+class TestHistoryCreateView(generics.CreateAPIView):
+    serializer_class = TestHistorySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Получаем give_information и test_information из запроса
+        give_info = serializer.validated_data.get('give_information')
+        test_info = serializer.validated_data.get('test_information')
+
+        # Если есть give_information, берём test из него
+        if give_info:
+            test_info = give_info.test
+            given_group = give_info.given_group
+
+        # Проверяем, что test_info существует
+        if not test_info:
+            raise ValidationError("Test maglumatlary tapylmady.")
+
+        # Сохраняем все поля: user, test_information и give_information
+        serializer.save(
+            user=self.request.user,
+            test_information=test_info,
+            give_information=give_info,
+            given_group=given_group
+        )
+
 
 class TestHistoryListView(generics.ListAPIView):
     serializer_class = TestHistorySerializer
@@ -111,9 +150,7 @@ class TestHistoryListView(generics.ListAPIView):
         
         # 2. Сценарий для студента (вызывается из okuwcy.jsx)
         elif logged_in_user.role == 'student':
-            
-            # Получаем ID пользователя из параметра запроса 'user'
-            user_id_from_query = self.request.query_params.get('user')
+            return TestHistory.objects.filter(user=logged_in_user).order_by("-id")
             
             # 🛑 Исправление 500 Internal Server Error: Защита от ?user=undefined
             if not user_id_from_query or user_id_from_query.lower() == 'undefined':

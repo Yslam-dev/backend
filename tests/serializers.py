@@ -76,25 +76,55 @@ class TestGiveSerializer(serializers.ModelSerializer):
             'teacher', 'test', 'test_theme', 'test_id', 'given_questions'
         ]
         # depth больше не нужен
-        
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'surname', 'username']
+        # eger User modelinde 'name' we 'surname' ýok bolsa, uýgunlaşdyryp ýaz        
 # =================================================================
 # 3. ИСПРАВЛЕННЫЙ TestHistorySerializer 
 # =================================================================
 
+        
+class TestShortSerializer(serializers.ModelSerializer):
+    teacher = serializers.SlugRelatedField(slug_field='username', read_only=True)
+
+    class Meta:
+        model = Test
+        fields = ['id', 'theme', 'number_question', 'create_at', 'teacher']
+
+
 class TestHistorySerializer(serializers.ModelSerializer):
-    """
-    Возвращает TestHistory с информацией о TestGive и Test.
-    TestGive и TestInformation будут отображены вложенными.
-    """
-    
-    # Добавляем прямые поля для темы и учителя, чтобы избежать излишних depth.
+    # 🟢 Добавляем нужные поля для отображения темы и даты
     test_theme = serializers.CharField(source='test_information.theme', read_only=True)
     teacher_username = serializers.CharField(source='test_information.teacher.username', read_only=True)
-    
+    test_date = serializers.DateTimeField(source='test_information.create_at', read_only=True)
+    user = UserSerializer(read_only=True)  
     class Meta:
         model = TestHistory
-        fields = '__all__'
-        read_only_fields = ['user']
-        # ⚠️ УДАЛЕНО depth=1. Лучше явно указывать поля, как выше, 
-        # чтобы избежать неконтролируемой рекурсии и загрузки всех вопросов. 
-        # depth = 1
+        fields = [
+            "id",
+            "number_corrected",
+            "ball",
+            "user",
+            "test_information",
+            "give_information",
+            "review_questions",
+            "created_at",
+            "test_theme",          # 🟢 Добавлено
+            "teacher_username",    # 🟢 Добавлено
+            "test_date",
+        ]
+        read_only_fields = ["user"]
+
+
+    def get_test_information(self, obj):
+        if obj.test_information:
+            return {
+                "id": obj.test_information.id,
+                "theme": obj.test_information.theme,
+                "teacher": obj.test_information.teacher.username,
+                "number_question": obj.test_information.number_question,
+                "create_at": obj.test_information.create_at, # 🟢 Добавлено
+            }
+        return None

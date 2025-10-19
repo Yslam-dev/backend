@@ -6,6 +6,7 @@ class User(AbstractUser):
         ("teacher", "Teacher"),
         ("student", "Student"),
     )
+    username = models.CharField(max_length=150, unique=False) 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     surname = models.CharField(max_length=50)
     group_number = models.CharField(max_length=4, blank=True, null=True)
@@ -14,4 +15,3 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
