@@ -114,6 +114,7 @@ class TestHistorySerializer(serializers.ModelSerializer):
             "test_theme",          # 🟢 Добавлено
             "teacher_username",    # 🟢 Добавлено
             "test_date",
+            "given_group",
         ]
         read_only_fields = ["user"]
 
