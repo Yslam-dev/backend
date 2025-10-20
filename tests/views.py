@@ -115,26 +115,28 @@ class TestHistoryCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Получаем give_information и test_information из запроса
         give_info = serializer.validated_data.get('give_information')
         test_info = serializer.validated_data.get('test_information')
+        given_group = None  # 🟢 добавляем по умолчанию
 
-        # Если есть give_information, берём test из него
+        # Если есть give_information — берём группу и тест оттуда
         if give_info:
             test_info = give_info.test
             given_group = give_info.given_group
 
-        # Проверяем, что test_info существует
         if not test_info:
             raise ValidationError("Test maglumatlary tapylmady.")
 
-        # Сохраняем все поля: user, test_information и give_information
+        # Сохраняем всё сразу
         serializer.save(
             user=self.request.user,
             test_information=test_info,
             give_information=give_info,
             given_group=given_group
         )
+
+        # Отладка (временно, можно удалить потом)
+        print("✅ given_group saved as:", given_group)
 
 
 class TestHistoryListView(generics.ListAPIView):
