@@ -1,66 +1,31 @@
-from django.contrib.auth import authenticate
+# views.py dosyanın en altına ekle:
+
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
+from .serializers import UserCreateSerializer
+from django.contrib.auth import get_user_model
 
-# Функция создания JWT
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-    }
+User = get_user_model()
 
-# Логин и выдача JWT
+# 1. Yeni Kullanıcı Oluşturma (Sadece Adminler)
 @api_view(['POST'])
-@permission_classes([AllowAny])
-def api_login_jwt(request):
-    username = request.data.get("username")
-    password = request.data.get("password")
-    role = request.data.get("role")
-    group_number = request.data.get("group_number")
+@permission_classes([IsAuthenticated]) # İstersen IsAdminUser yapabilirsin
+def api_create_user(request):
+    serializer = UserCreateSerializer(data=request.data)
+    if serializer.is_valid():
+        user = serializer.save()
+        # Serializer create metodunda generated_password'ü response'a eklemiştik
+        return Response({
+            "message": "Kullanıcı oluşturuldu!",
+            "username": user.username,
+            "generated_password": getattr(user, 'generated_password', 'Hata')
+        }, status=201)
+    return Response(serializer.errors, status=400)
 
-    if not username or not password:
-        return Response({"message": "Отсутствует username или password"}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = authenticate(request, username=username, password=password)
-    if not user:
-        return Response({"message": "Неверный логин или пароль"}, status=status.HTTP_401_UNAUTHORIZED)
-
-    if role and user.role != role:
-        return Response({"message": "Роль не совпадает"}, status=status.HTTP_403_FORBIDDEN)
-    if role == "student" and group_number and user.group_number != group_number:
-        return Response({"message": "Неверный номер группы"}, status=status.HTTP_403_FORBIDDEN)
-
-    # Создаём токены
-    tokens = get_tokens_for_user(user)
-
-    # Помечаем онлайн
-    user.is_online = True
-    user.save(update_fields=['is_online'])
-
-    return Response({
-        "message": "Успешный вход",
-        "access": tokens["access"],
-        "refresh": tokens["refresh"],
-        "user": {
-            "surname": user.surname,
-            "role": user.role,
-            "group_number": user.group_number,
-            "is_online": user.is_online,
-        }
-    })
-
-# Получение информации о пользователе (защищено JWT)
+# 2. Kullanıcıları Listeleme
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def user_info_api(request):
-    user = request.user
-    return Response({
-        "surname": user.surname,
-        "role": user.role,
-        "group_number": user.group_number,
-        "is_online": user.is_online,
-    })
+def api_list_users(request):
+    users = User.objects.all().values('id', 'username', 'surname', 'role', 'group_number', 'is_online')
+    return Response(list(users))
