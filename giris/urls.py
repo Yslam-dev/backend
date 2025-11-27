@@ -1,9 +1,9 @@
 from django.urls import path
-from .views import api_login_jwt, user_info_api, api_create_user, api_list_users # Yeni view'leri import et
+from .views import  user_info_api, api_create_user, api_list_users # Yeni view'leri import et
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    path('login_jwt/', api_login_jwt, name='api-login-jwt'),
+ #   path('login_jwt/', api_login_jwt, name='api-login-jwt'),
     path('user/', user_info_api, name='user-info'),
     
     # Yeni eklenenler:
