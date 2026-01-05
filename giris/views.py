@@ -29,3 +29,15 @@ def api_create_user(request):
 def api_list_users(request):
     users = User.objects.all().values('id', 'username', 'surname', 'role', 'group_number', 'is_online')
     return Response(list(users))
+# Добавь это в giris/views.py
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info_api(request):
+    user = request.user
+    return Response({
+        "username": user.username,
+        "role": user.role,
+        "surname": user.surname,
+        "group_number": user.group_number,
+    })
