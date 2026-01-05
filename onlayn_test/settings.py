@@ -50,7 +50,7 @@ INSTALLED_APPS = [
 ]
 INSTALLED_APPS += ["channels"]
 
-ASGI_APPLICATION = "your_project.asgi.application"
+ASGI_APPLICATION = "onlayn_test.asgi.application"
 
 CHANNEL_LAYERS = {
     "default": {
